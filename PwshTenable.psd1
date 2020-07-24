@@ -12,7 +12,7 @@
     RootModule = './PwshTenable.psm1'
 
     # Version number of this module.
-    ModuleVersion = '999.999'
+    ModuleVersion = '0.1.1'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
