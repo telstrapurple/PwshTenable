@@ -75,17 +75,18 @@ stages:
         Get-ChildItem -Path '$(Pipeline.Workspace)' -Directory | Invoke-ScriptAnalyzer -EnableExit | Format-Table -AutoSize
       displayName: Script Analyzer
     - pwsh: |
-        Save-Module -Name Pester -Path '.' -MaximumVersion 4.999.999 -Repository PSGallery -Confirm:$false
+        Save-Module -Name Pester -Path '.' -MinimumVersion 5.0 -Repository PSGallery -Confirm:$false
         Import-Module -Name './Pester/'
+        Get-Module Pester | Select Version, Name
         Set-Location -Path '$(Pipeline.Workspace)'
-        Invoke-Pester -EnableExit -OutputFile "$(System.DefaultWorkingDirectory)/Test-Pester-Mac.xml" -OutputFormat NUnitXML
+        Invoke-Pester -CI
       displayName: Pester
     - task: PublishTestResults@2
       condition: succeededOrFailed()
       inputs:
         testResultsFormat: 'NUnit'
-        testResultsFiles: 'Test-Pester-Mac.xml'
-        searchFolder: $(System.DefaultWorkingDirectory)
+        testResultsFiles: 'testResults.xml'
+        searchFolder: $(Pipeline.Workspace)
         mergeTestResults: true
         buildPlatform: Mac 10.14
 
@@ -104,17 +105,18 @@ stages:
         Get-ChildItem -Path '$(Pipeline.Workspace)' -Directory | Invoke-ScriptAnalyzer -EnableExit | Format-Table -AutoSize
       displayName: Script Analyzer
     - pwsh: |
-        Save-Module -Name Pester -Path '.' -MaximumVersion 4.999.999 -Repository PSGallery -Confirm:$false
+        Save-Module -Name Pester -Path '.' -MinimumVersion 5.0 -Repository PSGallery -Confirm:$false
         Import-Module -Name './Pester/'
+        Get-Module Pester | Select Version, Name
         Set-Location -Path '$(Pipeline.Workspace)'
-        Invoke-Pester -EnableExit -OutputFile "$(System.DefaultWorkingDirectory)/Test-Pester-Ubuntu.xml" -OutputFormat NUnitXML
+        Invoke-Pester -CI
       displayName: Pester
     - task: PublishTestResults@2
       condition: succeededOrFailed()
       inputs:
         testResultsFormat: 'NUnit'
-        testResultsFiles: 'Test-Pester-Ubuntu.xml'
-        searchFolder: $(System.DefaultWorkingDirectory)
+        testResultsFiles: 'testResults.xml'
+        searchFolder: $(Pipeline.Workspace)
         mergeTestResults: true
         buildPlatform: Ubuntu 18.04
 
@@ -133,46 +135,47 @@ stages:
         Get-ChildItem -Path '$(Pipeline.Workspace)' -Directory | Invoke-ScriptAnalyzer -EnableExit | Format-Table -AutoSize
       displayName: Script Analyzer
     - pwsh: |
-        Save-Module -Name Pester -Path '.' -MaximumVersion 4.999.999 -Repository PSGallery -Confirm:$false
+        Save-Module -Name Pester -Path '.' -MinimumVersion 5.0 -Repository PSGallery -Confirm:$false
         Import-Module -Name './Pester/'
+        Get-Module Pester | Select Version, Name
         Set-Location -Path '$(Pipeline.Workspace)'
-        Invoke-Pester -EnableExit -OutputFile "$(System.DefaultWorkingDirectory)/Test-Pester-Win2019.xml" -OutputFormat NUnitXML
+        Invoke-Pester -CI
       displayName: Pester
     - task: PublishTestResults@2
       condition: succeededOrFailed()
       inputs:
         testResultsFormat: 'NUnit'
-        testResultsFiles: 'Test-Pester-Win2019.xml'
-        searchFolder: $(System.DefaultWorkingDirectory)
+        testResultsFiles: 'testResults.xml'
+        searchFolder: $(Pipeline.Workspace)
         mergeTestResults: true
         buildPlatform: Windows Server 2019
 
-  - job: Windows_2016_Powershell
+  - job: Windows_2016_Pwsh
     pool:
       vmImage: 'vs2017-win2016'
     steps:
     - checkout: none
     - download: current
       artifact: files
-    - powershell: $PSVersionTable | Out-String
+    - pwsh: $PSVersionTable | Out-String
       displayName: PSVersionTable
-    - powershell: |
+    - pwsh: |
         Save-Module -Name PSScriptAnalyzer -Path '.' -Repository PSGallery -Confirm:$false
         Resolve-Path -Path './PSScriptAnalyzer/*/PSScriptAnalyzer.psd1' | Import-Module
         Get-ChildItem -Path '$(Pipeline.Workspace)' -Directory | Invoke-ScriptAnalyzer -EnableExit | Format-Table -AutoSize
       displayName: Script Analyzer
-    - powershell: |
-        Save-Module -Name Pester -Path '.' -MaximumVersion 4.999.999 -Repository PSGallery -Confirm:$false
+    - pwsh: |
+        Save-Module -Name Pester -Path '.' -MinimumVersion 5.0 -Repository PSGallery -Confirm:$false
         Resolve-Path -Path './Pester/*/Pester.psd1' | Import-Module
         Set-Location -Path '$(Pipeline.Workspace)'
-        Invoke-Pester -EnableExit -OutputFile "$(System.DefaultWorkingDirectory)/Test-Pester-Win2016.xml" -OutputFormat NUnitXML
+        Invoke-Pester -CI
       displayName: Pester
     - task: PublishTestResults@2
       condition: succeededOrFailed()
       inputs:
         testResultsFormat: 'NUnit'
-        testResultsFiles: 'Test-Pester-Win2016.xml'
-        searchFolder: $(System.DefaultWorkingDirectory)
+        testResultsFiles: 'testResults.xml'
+        searchFolder: $(Pipeline.Workspace)
         mergeTestResults: true
         buildPlatform: Windows Server 2016
 

@@ -70,13 +70,22 @@
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
     FunctionsToExport = @(
-        'Connect-', 'Connect-Tenable'
-        'Get-Connection', 'Get-TenableConnection'
-        'Get-User', 'Get-TenableUser'
-        'Invoke-Method', 'Invoke-TenableMethod'
-        'New-User', 'New-TenableUser'
-        'Remove-User', 'Remove-TenableUser'
-        'Update-User', 'Update-TenableUser'
+        'Confirm-SmsVerificationCode', 'Confirm-TenableSmsVerificationCode'
+        'Connect-',                    'Connect-Tenable'
+        'Disable-User',                'Disable-TenableUser'
+        'Disable-UserTwoFactor',       'Disable-TenableUserTwoFactor'
+        'Enable-User',                 'Enable-TenableUser'
+        'Enable-UserTwoFactor',        'Enable-TenableUserTwoFactor'
+        'Get-Connection',              'Get-TenableConnection'
+        'Get-User',                    'Get-TenableUser'
+        'Get-UserAuthorization',       'Get-TenableUserAuthorication'
+        'Invoke-Method',               'Invoke-TenableMethod'
+        'New-ApiKey',                  'New-TenableApiKey'
+        'New-User',                    'New-TenableUser'
+        'Remove-User',                 'Remove-TenableUser'
+        'Send-SmsVerificationCode',    'Send-TenableSmsVerificationCode'
+        'Update-User',                 'Update-TenableUser'
+        'Update-UserAuthorization',    'Update-TenableUserAuthorication'
     )
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
