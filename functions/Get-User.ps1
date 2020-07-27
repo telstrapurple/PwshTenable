@@ -23,12 +23,17 @@ function Get-User {
         Gets a list of all users using a connection context.
     #>
     [OutputType([PSCustomObject])]
-    [CMDletBinding()]
+    [CMDletBinding(DefaultParameterSetName = 'all')]
     Param (
-        # The UUID (`uuid`) or unique ID (`id`) of the user.
-        [Parameter()]
-        [ValidateNotNullOrEmpty()]
-        [String]
+        # The UUID of the user.
+        [Parameter(Mandatory, ParameterSetName = 'uuid')]
+        [Guid]
+        $UserUuid,
+
+        # The ID of the user.
+        [Parameter(Mandatory, ParameterSetName = 'id')]
+        [ValidateRange(1, [Int32]::MaxValue)]
+        [Int32]
         $UserId,
 
         # Tenable Connection Context from `Get-TenableConnection`
@@ -38,11 +43,24 @@ function Get-User {
         $Context = $null
     )
 
-    if ($PSBoundParameters.ContainsKey('UserId')) {
-        $path = "/users/$UserId"
-    } else {
-        $path = '/users'
+    switch ($PSCmdlet.ParameterSetName) {
+        'uuid' {
+            $path = "/users/$UserUuid"
+        }
+        'id' {
+            $path = "/users/$UserId"
+        }
+        default {
+            $path = '/users'
+        }
     }
 
-    Invoke-Method -Context $Context -Path $path -Verbose:$VerbosePreference
+    $result = Invoke-Method -Context $Context -Path $path -Verbose:$VerbosePreference
+    if ($result) {
+        if ($result | Get-Member -Name users) {
+            $result | ForEach-Object users
+        } else {
+            $result
+        }
+    }
 }

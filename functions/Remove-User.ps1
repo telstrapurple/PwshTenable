@@ -6,7 +6,7 @@ function Remove-User {
     .DESCRIPTION
         Deletes a user
     .EXAMPLE
-        PS /> Remove-TenableUser -UserId d64aa936-e63f-4227-a394-1699425f07e1
+        PS /> Remove-TenableUser -UserUuid d64aa936-e63f-4227-a394-1699425f07e1
 
         Deletes a user using their uuid.
     .EXAMPLE
@@ -19,12 +19,17 @@ function Remove-User {
         Deletes a user using their id and a connection context.
     #>
     [OutputType([PSCustomObject])]
-    [CMDletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+    [CMDletBinding(SupportsShouldProcess, ConfirmImpact = 'High', DefaultParameterSetName = 'uuid')]
     Param (
-        # The UUID (`uuid`) or unique ID (`id`) of the user.
-        [Parameter(Mandatory)]
-        [ValidateNotNullOrEmpty()]
-        [String]
+        # The UUID of the user.
+        [Parameter(Mandatory, ParameterSetName = 'uuid')]
+        [Guid]
+        $UserUuid,
+
+        # The ID of the user.
+        [Parameter(Mandatory, ParameterSetName = 'id')]
+        [ValidateRange(1, [Int32]::MaxValue)]
+        [Int32]
         $UserId,
 
         # Tenable Connection Context from `Get-TenableConnection`
@@ -34,7 +39,14 @@ function Remove-User {
         $Context = $null
     )
 
-    $path = "/users/$UserId"
+    switch ($PSCmdlet.ParameterSetName) {
+        'uuid' {
+            $path = "/users/$UserUuid"
+        }
+        'id' {
+            $path = "/users/$UserId"
+        }
+    }
 
     if ($PSCmdlet.ShouldProcess($UserId, 'Delete User')) {
         Invoke-Method -Context $Context -Method 'Delete' -Path $path -Verbose:$VerbosePreference

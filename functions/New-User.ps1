@@ -85,7 +85,7 @@ function New-User {
 
     $path = '/users'
 
-    if ($PSCmdlet.ShouldProcess($Id, 'Delete User')) {
+    if ($PSCmdlet.ShouldProcess($Username, 'Create User')) {
         Invoke-Method -Context $Context -Method 'Post' -Path $path -Body $body -Verbose:$VerbosePreference
     }
 }

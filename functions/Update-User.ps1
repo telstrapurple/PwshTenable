@@ -5,7 +5,7 @@ function Update-User {
     .DESCRIPTION
         Updates an existing user account.
     .EXAMPLE
-        PS /> Update-TenableUser -UserId d64aa936-e63f-4227-a394-1699425f07e1 -Permission 32
+        PS /> Update-TenableUser -UserUuid d64aa936-e63f-4227-a394-1699425f07e1 -Permission 32
 
         Updates a user using their uuid.
     .EXAMPLE
@@ -22,17 +22,22 @@ function Update-User {
         Updates a user using their id and a connection context.
     #>
     [OutputType([PSCustomObject])]
-    [CMDletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+    [CMDletBinding(SupportsShouldProcess, ConfirmImpact = 'High', DefaultParameterSetName = 'uuid')]
     Param (
-        # The UUID (`uuid`) or unique ID (`id`) of the user.
-        [Parameter(Mandatory)]
-        [ValidateNotNullOrEmpty()]
-        [String]
+        # The UUID of the user.
+        [Parameter(Mandatory, ParameterSetName = 'uuid')]
+        [Guid]
+        $UserUuid,
+
+        # The ID of the user.
+        [Parameter(Mandatory, ParameterSetName = 'id')]
+        [ValidateRange(1, [Int32]::MaxValue)]
+        [Int32]
         $UserId,
 
         # The user permissions as described in: https://developer.tenable.com/docs/permissions
         [Parameter(Mandatory)]
-        [ValidateNotNullOrEmpty()]
+        [ValidateRange(16, 64)]
         [Int32]
         $Permission,
 
@@ -60,6 +65,15 @@ function Update-User {
         $Context = $null
     )
 
+    switch ($PSCmdlet.ParameterSetName) {
+        'uuid' {
+            $path = "/users/$UserUuid"
+        }
+        'id' {
+            $path = "/users/$UserId"
+        }
+    }
+
     $body = @{
         permissions = $Permission
     }
@@ -75,8 +89,6 @@ function Update-User {
     if ($PSBoundParameters.ContainsKey('Enabled')) {
         $body['enabled'] = $Enabled
     }
-
-    $path = "/users/$UserID"
 
     if ($PSCmdlet.ShouldProcess($UserId, 'Update User')) {
         Invoke-Method -Context $Context -Method 'Put' -Path $path -Body $body -Verbose:$VerbosePreference
