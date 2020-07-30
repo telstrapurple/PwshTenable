@@ -1,4 +1,8 @@
 
+variables:
+- name: moduleName
+  value: PwshTenable
+
 trigger:
 - master
 
@@ -14,170 +18,13 @@ stages:
     - checkout: self
       clean: true
       persistCredentials: true
-    - script: dotnet tool install --global GitVersion.Tool --version 5.3.3
-      displayName: Install Gitversion
-    - pwsh: |
-        $raw = dotnet-gitversion
-        Write-Host $raw
-        $version = $raw | ConvertFrom-Json | ForEach-Object MajorMinorPatch
-        Write-Host "##vso[build.updatebuildnumber]$version"
-      displayName: Set Build Number
-    - pwsh: |
-        $rawManifest = Get-Content -Path "PwshTenable.psd1" -raw
-        $updatedManifest = $rawManifest -replace "ModuleVersion\s*=\s*['`"][0-9.]+['`"]", "ModuleVersion = '$(Build.BuildNumber)'"
-        $updatedManifest | Out-File -Path "PwshTenable.psd1" -NoNewline
-      displayName: Update Module Manifest Version Number
-    - task: CopyFiles@2
-      inputs:
-        contents: |
-          **/*
-          !**/.*/**/*
-          !**/.*
-          !azure-pipelines.yml
-          !gitversion.yml
-        targetFolder: $(Build.ArtifactStagingDirectory)/PwshTenable
-    - publish: '$(Build.ArtifactStagingDirectory)/PwshTenable'
-      artifact: 'files'
-      displayName: 'Publish Artifact files'
-    - task: ArchiveFiles@2
-      inputs:
-        rootFolderOrFile: $(Build.ArtifactStagingDirectory)/PwshTenable
-        archiveFile: '$(Build.ArtifactStagingDirectory)/PwshTenable_$(Build.BuildNumber).zip'
-      displayName: 'Archive zip'
-    - publish: '$(Build.ArtifactStagingDirectory)/PwshTenable_$(Build.BuildNumber).zip'
-      artifact: 'zip'
-      displayName: 'Publish Artifact zip'
-    - task: ArchiveFiles@2
-      inputs:
-        rootFolderOrFile: $(Build.ArtifactStagingDirectory)/PwshTenable
-        archiveType: tar
-        archiveFile: '$(Build.ArtifactStagingDirectory)/PwshTenable_$(Build.BuildNumber).tar.gz'
-      displayName: 'Archive tar'
-    - publish: '$(Build.ArtifactStagingDirectory)/PwshTenable_$(Build.BuildNumber).tar.gz'
-      artifact: 'tar'
-      displayName: 'Publish Artifact tar'
+    - template: build-steps.yml
+      parameters:
+        moduleName: ${{ variables.moduleName }}
 
-- stage: Test
-  jobs:
-
-  - job: Mac_10_14
-    pool:
-      vmImage: 'macOS-10.14'
-    steps:
-    - checkout: none
-    - download: current
-      artifact: files
-    - pwsh: $PSVersionTable | Out-String
-      displayName: PSVersionTable
-    - pwsh: |
-        Save-Module -Name PSScriptAnalyzer -Path '.' -Repository PSGallery -Confirm:$false
-        Import-Module -Name './PSScriptAnalyzer/'
-        Get-ChildItem -Path '$(Pipeline.Workspace)' -Directory | Invoke-ScriptAnalyzer -EnableExit | Format-Table -AutoSize
-      displayName: Script Analyzer
-    - pwsh: |
-        Save-Module -Name Pester -Path '.' -MinimumVersion 5.0 -Repository PSGallery -Confirm:$false
-        Import-Module -Name './Pester/'
-        Get-Module Pester | Select Version, Name
-        Set-Location -Path '$(Pipeline.Workspace)'
-        Invoke-Pester -CI
-      displayName: Pester
-    - task: PublishTestResults@2
-      condition: succeededOrFailed()
-      inputs:
-        testResultsFormat: 'NUnit'
-        testResultsFiles: 'testResults.xml'
-        searchFolder: $(Pipeline.Workspace)
-        mergeTestResults: true
-        buildPlatform: Mac 10.14
-
-  - job: Ubuntu_18_04
-    pool:
-      vmImage: 'ubuntu-18.04'
-    steps:
-    - checkout: none
-    - download: current
-      artifact: files
-    - pwsh: $PSVersionTable | Out-String
-      displayName: PSVersionTable
-    - pwsh: |
-        Save-Module -Name PSScriptAnalyzer -Path '.' -Repository PSGallery -Confirm:$false
-        Import-Module -Name './PSScriptAnalyzer/'
-        Get-ChildItem -Path '$(Pipeline.Workspace)' -Directory | Invoke-ScriptAnalyzer -EnableExit | Format-Table -AutoSize
-      displayName: Script Analyzer
-    - pwsh: |
-        Save-Module -Name Pester -Path '.' -MinimumVersion 5.0 -Repository PSGallery -Confirm:$false
-        Import-Module -Name './Pester/'
-        Get-Module Pester | Select Version, Name
-        Set-Location -Path '$(Pipeline.Workspace)'
-        Invoke-Pester -CI
-      displayName: Pester
-    - task: PublishTestResults@2
-      condition: succeededOrFailed()
-      inputs:
-        testResultsFormat: 'NUnit'
-        testResultsFiles: 'testResults.xml'
-        searchFolder: $(Pipeline.Workspace)
-        mergeTestResults: true
-        buildPlatform: Ubuntu 18.04
-
-  - job: Windows_2019_Pwsh
-    pool:
-      vmImage: 'windows-2019'
-    steps:
-    - checkout: none
-    - download: current
-      artifact: files
-    - pwsh: $PSVersionTable | Out-String
-      displayName: PSVersionTable
-    - pwsh: |
-        Save-Module -Name PSScriptAnalyzer -Path '.' -Repository PSGallery -Confirm:$false
-        Import-Module -Name './PSScriptAnalyzer/'
-        Get-ChildItem -Path '$(Pipeline.Workspace)' -Directory | Invoke-ScriptAnalyzer -EnableExit | Format-Table -AutoSize
-      displayName: Script Analyzer
-    - pwsh: |
-        Save-Module -Name Pester -Path '.' -MinimumVersion 5.0 -Repository PSGallery -Confirm:$false
-        Import-Module -Name './Pester/'
-        Get-Module Pester | Select Version, Name
-        Set-Location -Path '$(Pipeline.Workspace)'
-        Invoke-Pester -CI
-      displayName: Pester
-    - task: PublishTestResults@2
-      condition: succeededOrFailed()
-      inputs:
-        testResultsFormat: 'NUnit'
-        testResultsFiles: 'testResults.xml'
-        searchFolder: $(Pipeline.Workspace)
-        mergeTestResults: true
-        buildPlatform: Windows Server 2019
-
-  - job: Windows_2016_Pwsh
-    pool:
-      vmImage: 'vs2017-win2016'
-    steps:
-    - checkout: none
-    - download: current
-      artifact: files
-    - pwsh: $PSVersionTable | Out-String
-      displayName: PSVersionTable
-    - pwsh: |
-        Save-Module -Name PSScriptAnalyzer -Path '.' -Repository PSGallery -Confirm:$false
-        Resolve-Path -Path './PSScriptAnalyzer/*/PSScriptAnalyzer.psd1' | Import-Module
-        Get-ChildItem -Path '$(Pipeline.Workspace)' -Directory | Invoke-ScriptAnalyzer -EnableExit | Format-Table -AutoSize
-      displayName: Script Analyzer
-    - pwsh: |
-        Save-Module -Name Pester -Path '.' -MinimumVersion 5.0 -Repository PSGallery -Confirm:$false
-        Resolve-Path -Path './Pester/*/Pester.psd1' | Import-Module
-        Set-Location -Path '$(Pipeline.Workspace)'
-        Invoke-Pester -CI
-      displayName: Pester
-    - task: PublishTestResults@2
-      condition: succeededOrFailed()
-      inputs:
-        testResultsFormat: 'NUnit'
-        testResultsFiles: 'testResults.xml'
-        searchFolder: $(Pipeline.Workspace)
-        mergeTestResults: true
-        buildPlatform: Windows Server 2016
+- template: test-stage.yml
+  parameters:
+    PS51: false
 
 - stage: Deploy
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
@@ -193,8 +40,8 @@ stages:
     - download: current
       artifact: files
     - pwsh: |
-        Move-Item -Path '$(Pipeline.Workspace)/files/PwshTenable.psd1' -Destination 'PwshTenable.psd1' -Confirm:$false -Force
-        git add PwshTenable.psd1
+        Move-Item -Path '$(Pipeline.Workspace)/files/${{ variables.moduleName }}.psd1' -Destination '${{ variables.moduleName }}.psd1' -Confirm:$false -Force
+        git add ${{ variables.moduleName }}.psd1
         git -c "user.name=$(Build.RequestedFor)" -c "user.email=$(Build.RequestedForEmail)" commit -m "Updated module version: $(Build.BuildNumber) [skip ci]"
         git push origin HEAD:master
       workingDirectory: '$(Build.SourcesDirectory)'
@@ -207,7 +54,7 @@ stages:
       inputs:
         target: master
         gitHubConnection: RobFaie
-        repositoryName: telstrapurple/PwshTenable
+        repositoryName: telstrapurple/${{ variables.moduleName }}
         tagSource: manual
         tag: $(Build.BuildNumber)
         assets: |
