@@ -70,6 +70,7 @@
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
     FunctionsToExport = @(
+        'Add-GroupMember',             'Add-TenableGroupMember'
         'Confirm-SmsVerificationCode', 'Confirm-TenableSmsVerificationCode'
         'Connect-',                    'Connect-Tenable'
         'Disable-User',                'Disable-TenableUser'
@@ -77,13 +78,19 @@
         'Enable-User',                 'Enable-TenableUser'
         'Enable-UserTwoFactor',        'Enable-TenableUserTwoFactor'
         'Get-Connection',              'Get-TenableConnection'
+        'Get-Group',                   'Get-TenableGroup'
+        'Get-GroupMember',             'Get-TenableGroupMember'
         'Get-User',                    'Get-TenableUser'
         'Get-UserAuthorization',       'Get-TenableUserAuthorication'
         'Invoke-Method',               'Invoke-TenableMethod'
         'New-ApiKey',                  'New-TenableApiKey'
+        'New-Group',                   'New-TenableGroup'
         'New-User',                    'New-TenableUser'
+        'Remove-Group',                'Remove-TenableGroup'
+        'Remove-GroupMember',          'Remove-TenableGroupMember'
         'Remove-User',                 'Remove-TenableUser'
         'Send-SmsVerificationCode',    'Send-TenableSmsVerificationCode'
+        'Update-Group',                'Update-TenableGroup'
         'Update-User',                 'Update-TenableUser'
         'Update-UserAuthorization',    'Update-TenableUserAuthorication'
     )
