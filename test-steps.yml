@@ -1,0 +1,52 @@
+parameters:
+- name: testRunTitle
+  type: string
+- name: pwsh
+  type: boolean
+  default: true
+
+steps:
+- checkout: none
+- download: current
+  artifact: files
+- task: PowerShell@2
+  displayName: PSVersionTable
+  inputs:
+    targetType: inline
+    pwsh: ${{ parameters.pwsh }}
+    script: $PSVersionTable | Out-String
+- task: PowerShell@2
+  displayName: Script Analyzer
+  inputs:
+    targetType: inline
+    pwsh: ${{ parameters.pwsh }}
+    script: |
+      Save-Module -Name PSScriptAnalyzer -Path '.' -MinimumVersion 1.0 -MaximumVersion 1.999 -Repository PSGallery -Confirm:$false
+      Import-Module -Name './PSScriptAnalyzer/*/PSScriptAnalyzer.psd1'
+      Get-Module PSScriptAnalyzer | Select Version, Name
+      Get-ChildItem -Path '$(Pipeline.Workspace)' -Directory | Invoke-ScriptAnalyzer -EnableExit | Format-Table -AutoSize
+- task: PowerShell@2
+  displayName: Pester
+  inputs:
+    targetType: inline
+    pwsh: ${{ parameters.pwsh }}
+    script: |
+      Save-Module -Name Pester -Path '.' -MinimumVersion 5.0 -MaximumVersion 5.999 -Repository PSGallery -Confirm:$false
+      Import-Module -Name './Pester/*/Pester.psd1'
+      Get-Module Pester | Format-Table Name, Version | Out-String
+      Set-Location -Path '$(Pipeline.Workspace)'
+      Invoke-Pester -CI
+      Get-ChildItem *.xml | Out-String
+- task: PublishTestResults@2
+  condition: succeededOrFailed()
+  inputs:
+    testResultsFormat: 'NUnit'
+    testResultsFiles: 'testResults.xml'
+    searchFolder: $(Pipeline.Workspace)
+    testRunTitle: ${{ parameters.testRunTitle }}
+- task: PublishCodeCoverageResults@1
+  inputs:
+    codeCoverageTool: JaCoCo
+    summaryFileLocation: $(Pipeline.Workspace)/coverage.xml
+    reportDirectory: $(Pipeline.Workspace)
+    pathToSources: $(Pipeline.Workspace)

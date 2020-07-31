@@ -1,0 +1,51 @@
+parameters:
+- name: PS51
+  type: boolean
+  default: true
+
+stages:
+- stage: Test
+  jobs:
+
+  - job: Mac_10_14
+    pool:
+      vmImage: 'macOS-10.14'
+    steps:
+    - template: test-steps.yml
+      parameters:
+        testRunTitle: Mac 10.14
+  
+  - job: Ubuntu_18_04
+    pool:
+      vmImage: 'ubuntu-18.04'
+    steps:
+    - template: test-steps.yml
+      parameters:
+        testRunTitle: Ubuntu 18.04
+
+  - job: Windows_2019_Pwsh
+    pool:
+      vmImage: 'windows-2019'
+    steps:
+    - template: test-steps.yml
+      parameters:
+        testRunTitle: Windows Server 2019
+
+  - ${{ if eq(parameters.PS51, false) }}:
+    - job: Windows_2016_Pwsh
+      pool:
+        vmImage: 'vs2017-win2016'
+      steps:
+      - template: test-steps.yml
+        parameters:
+          testRunTitle: Windows Server 2016
+
+  - ${{ if eq(parameters.PS51, true) }}:
+    - job: Windows_2016_Powershell
+      pool:
+        vmImage: 'vs2017-win2016'
+      steps:
+      - template: test-steps.yml
+        parameters:
+          testRunTitle: Windows Server 2016
+          pwsh: false

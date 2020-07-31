@@ -1,0 +1,46 @@
+parameters:
+- name: moduleName
+  type: string
+
+steps:
+- script: dotnet tool install --global GitVersion.Tool --version 5.3.3
+  displayName: Install Gitversion
+- pwsh: |
+    $raw = dotnet-gitversion
+    Write-Host $raw
+    $version = $raw | ConvertFrom-Json | ForEach-Object MajorMinorPatch
+    Write-Host "##vso[build.updatebuildnumber]$version"
+  displayName: Set Build Number
+- pwsh: |
+    $rawManifest = Get-Content -Path "${{ parameters.moduleName }}.psd1" -raw
+    $updatedManifest = $rawManifest -replace "ModuleVersion\s*=\s*['`"][0-9.]+['`"]", "ModuleVersion = '$(Build.BuildNumber)'"
+    $updatedManifest | Out-File -Path "${{ parameters.moduleName }}.psd1" -NoNewline
+  displayName: Update Module Manifest Version Number
+- task: CopyFiles@2
+  inputs:
+    contents: |
+      **/*
+      !**/.*/**/*
+      !**/.*
+      !*.yml
+    targetFolder: $(Build.ArtifactStagingDirectory)/${{ parameters.moduleName }}
+- publish: '$(Build.ArtifactStagingDirectory)/${{ parameters.moduleName }}'
+  artifact: 'files'
+  displayName: 'Publish Artifact files'
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: $(Build.ArtifactStagingDirectory)/${{ parameters.moduleName }}
+    archiveFile: '$(Build.ArtifactStagingDirectory)/${{ parameters.moduleName }}_$(Build.BuildNumber).zip'
+  displayName: 'Archive zip'
+- publish: '$(Build.ArtifactStagingDirectory)/${{ parameters.moduleName }}_$(Build.BuildNumber).zip'
+  artifact: 'zip'
+  displayName: 'Publish Artifact zip'
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: $(Build.ArtifactStagingDirectory)/${{ parameters.moduleName }}
+    archiveType: tar
+    archiveFile: '$(Build.ArtifactStagingDirectory)/${{ parameters.moduleName }}_$(Build.BuildNumber).tar.gz'
+  displayName: 'Archive tar'
+- publish: '$(Build.ArtifactStagingDirectory)/${{ parameters.moduleName }}_$(Build.BuildNumber).tar.gz'
+  artifact: 'tar'
+  displayName: 'Publish Artifact tar'
