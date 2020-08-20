@@ -24,5 +24,12 @@ function Get-Group {
     )
 
     $path = '/groups'
-    Invoke-Method -Context $Context -Path $path -Verbose:$VerbosePreference
+    $result = Invoke-Method -Context $Context -Path $path -Verbose:$VerbosePreference
+    if ($result) {
+        if ($result | Get-Member -Name groups) {
+            $result | ForEach-Object groups
+        } else {
+            $result
+        }
+    }
 }

@@ -31,5 +31,12 @@ function Get-GroupMember {
 
     $path = "/groups/$GroupId/users"
 
-    Invoke-Method -Context $Context -Path $path -Verbose:$VerbosePreference
+    $result = Invoke-Method -Context $Context -Path $path -Verbose:$VerbosePreference
+    if ($result) {
+        if ($result | Get-Member -Name users) {
+            $result | ForEach-Object users
+        } else {
+            $result
+        }
+    }
 }
