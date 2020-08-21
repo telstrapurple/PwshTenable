@@ -24,7 +24,7 @@ stages:
 
 - template: test-stage.yml
   parameters:
-    PS51: false
+    PS51: true
 
 - stage: Deploy
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
