@@ -72,7 +72,6 @@ function Invoke-Method {
 
     $params = @{
         Method         = $Method
-        SslProtocol    = 'Tls12'
         Verbose        = $VerbosePreference
         Headers        = @{
             'Accept'    = 'application/json'
@@ -88,37 +87,52 @@ function Invoke-Method {
 
     $uri = 'https://cloud.tenable.com/' + $Path.TrimStart('/')
 
+    [Net.ServicePointManager]::SecurityProtocol += [System.Net.SecurityProtocolType]::Tls12
+
     $multiplier = 0.5
     while (-not [String]::IsNullOrEmpty($uri)) {
         try {
             $result = Invoke-RestMethod @params -Uri $uri
             $result
             $uri = $null
-
-        } catch [Microsoft.PowerShell.Commands.HttpResponseException] {
-            $errorRecord = $_
-            $response = $errorRecord.Exception.Response
-
-            if ($Retry -and $response.StatusCode -in @(429, 502, 503, 504)) {
-                $response | Select-Object StatusCode, ReasonPhrase | ConvertTo-Json -Compress | Write-Warning
-
-                $retryAfter = $response.Headers.RetryAfter ? $response.Headers.RetryAfter.Delta.TotalSeconds : 5
-
-                $multiplier *= 2
-                $jitter = Get-Random -Minimum 0.0 -Maximum 1.0
-                $sleep = $retryAfter + $multiplier + $jitter
-
-                if ($sleep -gt 30) {
-                    Write-Warning -Message "Long sleep! $sleep"
-                }
-                $null = Start-Sleep -Seconds $sleep
-
-            } else {
-                throw $errorRecord
-            }
         } catch {
             $errorRecord = $_
-            throw $errorRecord
+            if ($errorRecord.Exception.GetType().Name -in @('HttpResponseException', 'WebException')) {
+                $response = $errorRecord.Exception.Response
+
+                if ($Retry -and $response -and $response.StatusCode -in @(429, 502, 503, 504)) {
+                    $response | Select-Object StatusCode, ReasonPhrase | ConvertTo-Json -Compress | Write-Warning
+
+                    $retryAfter = 5
+                    if ($errorRecord.Exception -is [System.Net.WebException]) {
+                        if ($response.Headers['Retry-After']) {
+                            $retryAfter = $response.Headers['Retry-After']
+                        }
+                    } else {
+                        if ($response.Headers.RetryAfter) {
+                            $retryAfter = $response.Headers.RetryAfter.Delta.TotalSeconds
+                        }
+                    }
+
+                    $multiplier *= 2
+                    $jitter = Get-Random -Minimum 0.0 -Maximum 1.0
+                    $sleep = $retryAfter + $multiplier + $jitter
+
+                    if ($sleep -gt 30) {
+                        Write-Warning -Message "Long sleep! $sleep"
+                    }
+                    $null = Start-Sleep -Seconds $sleep
+
+                } else {
+                    $errorMessage = $errorRecord.ToString()
+                    Get-PSCallStack | ForEach-Object { $errorMessage += "`n" + $_.Command + ': line ' + $_.ScriptLineNumber }
+                    throw $errorMessage
+                }
+            } else {
+                $errorMessage = $errorRecord.ToString()
+                Get-PSCallStack | ForEach-Object { $errorMessage += "`n" + $_.Command + ': line ' + $_.ScriptLineNumber }
+                throw $errorMessage
+            }
         }
     }
 }
