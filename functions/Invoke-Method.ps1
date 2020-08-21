@@ -87,7 +87,7 @@ function Invoke-Method {
 
     $uri = 'https://cloud.tenable.com/' + $Path.TrimStart('/')
 
-    [Net.ServicePointManager]::SecurityProtocol += [System.Net.SecurityProtocolType]::Tls12
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
     $multiplier = 0.5
     while (-not [String]::IsNullOrEmpty($uri)) {
